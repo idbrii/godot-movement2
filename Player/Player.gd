@@ -10,9 +10,10 @@ extends CharacterBody2D
 
 # BASIC MOVEMENT VARIABLES ---------------- #
 var face_direction := 1
-var x_dir := 1
 
-@export var max_speed: float = 560
+@export_range(0, 1) var run_threshold: float = 0.8 # set to 0 to disable walk detection
+@export var max_walk_speed: float = 200
+@export var max_run_speed: float = 560
 @export var acceleration: float = 2880
 @export var turning_acceleration : float = 9600
 @export var deceleration: float = 3200
@@ -42,11 +43,12 @@ var is_jumping := false
 # All inputs we want to keep track of
 func get_input() -> Dictionary:
 	return {
-		"x": roundi(Input.get_axis("move_left", "move_right")),
-		"y": roundi(Input.get_axis("move_up", "move_down")),
+		"x": Input.get_axis("move_left", "move_right"),
+		"y": Input.get_axis("move_up", "move_down"),
 		"just_jump": Input.is_action_just_pressed("jump"),
 		"jump": Input.is_action_pressed("jump"),
 		"released_jump": Input.is_action_just_released("jump"),
+		"walk": Input.is_action_pressed("walk"),
 	}
 
 
@@ -60,19 +62,23 @@ func _physics_process(delta: float) -> void:
 
 
 func x_movement(delta: float) -> void:
-	x_dir = get_input().x
+	var x_val = get_input().x
+	var x_abs = abs(x_val)
+	var x_sign = sign(x_val)
+	var x_int = int(ceil(x_abs) * x_sign)
+	var is_walking = x_abs < run_threshold or get_input().walk
 
-	# Brake if we're not doing movement inputs.
-	if x_dir == 0:
+	# Brake if we're not doing movement inputs or slowing to walk
+	if x_abs <= 0.1 or (is_walking and abs(velocity.x) >= max_walk_speed):
 		velocity.x = Vector2(velocity.x, 0).move_toward(Vector2.ZERO, deceleration * delta).x
 		return
 
-	var does_input_dir_follow_momentum = sign(velocity.x) == x_dir
+	var does_input_dir_follow_momentum = sign(velocity.x) == x_sign
 
 	# If we are doing movement inputs and above max speed, don't accelerate nor decelerate
-	# Except if we are turning
+	# Except if we are turning or walking
 	# (This keeps our momentum gained from outside or slopes)
-	if abs(velocity.x) >= max_speed and does_input_dir_follow_momentum:
+	if not is_walking and abs(velocity.x) >= max_run_speed and does_input_dir_follow_momentum:
 		return
 
 	# Are we turning?
@@ -80,9 +86,9 @@ func x_movement(delta: float) -> void:
 	var accel_rate : float = acceleration if does_input_dir_follow_momentum else turning_acceleration
 
 	# Accelerate
-	velocity.x += x_dir * accel_rate * delta
+	velocity.x += x_val * accel_rate * delta
 
-	set_direction(x_dir) # This is purely for visuals
+	set_direction(roundi(x_int)) # This is purely for visuals
 
 
 func set_direction(hor_direction) -> void:
