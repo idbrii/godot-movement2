@@ -20,14 +20,18 @@ var face_direction := 1
 # ------------------------------------------ #
 
 # GRAVITY ----- #
-@export var gravity_acceleration : float = 3840
+## Base gravity.
+@export var gravity_acceleration : float = 4500
+## Speed threshold for applying default gravity_acceleration.
 @export var gravity_max : float = 1020
 # ------------- #
 
 # JUMP VARIABLES ------------------- #
 @export var jump_force : float = 1400
 @export var jump_cut : float = 0.25
-@export var jump_gravity_max : float = 500
+## Gravity during the upwards part of our jump. Extreme negative values make
+## jump feel floaty.
+@export_range(-3000, 3000) var jump_soaring_gravity_delta : float = -500
 @export var jump_hang_treshold : float = 2.0
 @export var jump_hang_gravity_mult : float = 0.1
 # Timers
@@ -114,9 +118,6 @@ func jump_logic(_delta: float) -> void:
 		is_jumping = true
 		jump_coyote_timer = 0
 		jump_buffer_timer = 0
-		# If falling, account for that lost speed
-		if velocity.y > 0:
-			velocity.y -= velocity.y
 
 		velocity.y = -jump_force
 
@@ -146,9 +147,9 @@ func apply_gravity(delta: float) -> void:
 	if velocity.y <= gravity_max:
 		applied_gravity = gravity_acceleration * delta
 
-	# If moving upwards while jumping, the limit is jump_gravity_max to achieve lower gravity
-	if (is_jumping and velocity.y < 0) and velocity.y > jump_gravity_max:
-		applied_gravity = 0
+	# If moving upwards while jumping, use jump_soaring_gravity_delta to achieve lower gravity
+	if is_jumping and velocity.y < 0:
+		applied_gravity = (gravity_acceleration + jump_soaring_gravity_delta) * delta
 
 	# Lower the gravity at the peak of our jump (where velocity is the smallest)
 	if is_jumping and abs(velocity.y) < jump_hang_treshold:
