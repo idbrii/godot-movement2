@@ -26,9 +26,23 @@ var x_dir := 1
 # JUMP VARIABLES ------------------- #
 ## Height in world units. For a tile-based game, you likely want to multiply
 ## by tile size to tune in numbers of tiles.
-@export var jump_height : float = 211.3
+@export var jump_height : float :
+	# Compute jump_force to reach this height based on gravity. Not 100%
+	# accurate since we vary gravity at different phases of the jump, but a
+	# useful estimate.
+	get:
+		return jump_force * jump_force / (2 * jump_gravity_acceleration)
+	set(value):
+		jump_height = value
+		_recompute_jump_force(value)
+var jump_force : float = 1300
 @export var jump_cut : float = 0.2
-@export var jump_gravity_acceleration : float = 4000
+@export var jump_gravity_acceleration : float = 4000 :
+	set(value):
+		var height = jump_height
+		jump_gravity_acceleration = value
+		_recompute_jump_force(height)
+
 @export var jump_hang_treshold : float = 2.0
 @export var jump_hang_gravity_mult : float = 0.1
 # Timers
@@ -39,6 +53,14 @@ var jump_coyote_timer : float = 0
 var jump_buffer_timer : float = 0
 var is_jumping := false
 # ----------------------------------- #
+
+
+# Lots of places need to compute jump force, but unfortunately these updates don't show in the Inspector.
+func _recompute_jump_force(height):
+	jump_force = sqrt(2 * jump_gravity_acceleration * height)
+
+func _ready():
+	_recompute_jump_force(jump_height)
 
 
 # All inputs we want to keep track of
@@ -111,9 +133,7 @@ func jump_logic(_delta: float) -> void:
 		jump_coyote_timer = 0
 		jump_buffer_timer = 0
 
-		# Compute the jump force based on gravity. Not 100% accurate since we
-		# vary gravity at different phases of the jump, but a useful estimate.
-		velocity.y = -sqrt(2 * jump_gravity_acceleration * jump_height)
+		velocity.y = -jump_force
 
 	# We're not actually interested in checking if the player is holding the jump button
 #	if get_input().jump:pass
