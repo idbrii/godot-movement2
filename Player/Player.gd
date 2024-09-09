@@ -120,7 +120,7 @@ func jump_logic(_delta: float) -> void:
 		is_jumping = true
 		jump_coyote_timer = 0
 		jump_buffer_timer = 0
-	
+
 		# Compute the jump force based on gravity. Not 100% accurate since we
 		# vary gravity at different phases of the jump, but a useful estimate.
 		velocity.y = -sqrt(2 * (gravity_acceleration + jump_soaring_gravity_delta) * jump_height)
