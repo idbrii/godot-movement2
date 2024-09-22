@@ -11,29 +11,31 @@ extends CharacterBody2D
 # BASIC MOVEMENT VARIABLES ---------------- #
 var face_direction := 1
 
+@export_group("Movement")
 @export_range(0, 1) var run_threshold: float = 0.8 # set to 0 to disable walk detection
-@export var max_walk_speed: float = 200
-@export var max_run_speed: float = 560
-@export var acceleration: float = 2880
-@export var turning_acceleration : float = 9600
-@export var deceleration: float = 3200
+@export_range(10, 1000) var max_walk_speed: float = 200
+@export_range(10, 1000) var max_run_speed: float = 560
+@export_range(1000, 9000) var acceleration: float = 2880
+@export_range(1000, 9000) var turning_acceleration: float = 9600
+@export_range(1000, 9000) var deceleration: float = 3200
 # ------------------------------------------ #
 
-# GRAVITY ----- #
+@export_group("Gravity")
 ## Base gravity.
 @export var gravity_acceleration : float = 4500
 ## Won't apply gravity if falling faster than this speed to prevent massive
 ## acceleration in long falls.
 @export_range(0, 5000) var max_drop_speed_for_gravity : float = 1000
-# ------------- #
 
-# JUMP VARIABLES ------------------- #
+@export_group("Jump Movement")
 ## Height in world units. For a tile-based game, you likely want to multiply
 ## by tile size to tune in numbers of tiles.
 @export var jump_height : float = 211.3
-@export var jump_cut : float = 0.25
+## Percent of jump speed to lose when releasing jump button. (0.25 will reduce
+## speed of 10 to 7.5.)
+@export_range(0, 1) var jump_cut: float = 0.25
 ## Gravity during the upwards part of our jump. Extreme negative values make
-## jump feel floaty.
+## jump feel floaty. Extreme positive values make our jump very quick.
 @export_range(-3000, 3000) var jump_soaring_gravity_delta : float = -500
 ## Speed that marks the peak of our jump. (This close to zero speed we're
 ## switching from moving up to moving down.) During this peak, we reduce
@@ -108,6 +110,7 @@ func set_direction(hor_direction) -> void:
 	# Turning relies on the scale of the player
 	# To animate, only scale the sprite
 	if hor_direction == 0:
+		# No clear direction, so don't change.
 		return
 	apply_scale(Vector2(hor_direction * face_direction, 1)) # flip
 	face_direction = hor_direction # remember direction
